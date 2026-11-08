@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.db import get_db, utcnow
+from app.core.i18n import get_lang
 from app.models import PasswordResetToken, User
 from app.schemas import LoginIn, RegisterIn, ResetConfirmIn, ResetRequestIn, UserOut
 from app.security import auth as A
@@ -13,6 +14,11 @@ from app.security.middleware import limiter
 from app.services.audit import audit, track
 from app.services.email import send_email
 
+RESET_MAIL = {
+    "en": ("Reset your TRAIL Intelligence password", "Use this link within 30 minutes to choose a new password:\n\n{link}\n\nIf you did not ask for this, ignore this email."),
+    "fr": ("Réinitialisez votre mot de passe TRAIL Intelligence", "Utilisez ce lien dans les 30 minutes pour choisir un nouveau mot de passe :\n\n{link}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail."),
+    "ar": ("إعادة تعيين كلمة مرور TRAIL Intelligence", "استخدم هذا الرابط خلال 30 دقيقة لاختيار كلمة مرور جديدة:\n\n{link}\n\nإذا لم تطلب ذلك، تجاهل هذه الرسالة."),
+}
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
@@ -37,7 +43,7 @@ def register(body: RegisterIn, request: Request, resp: Response, db: Session = D
     if db.query(User).filter_by(email=email).first():
         raise HTTPException(409, "Email already registered")
     u = User(email=email, password_hash=A.hash_password(body.password), full_name=body.full_name,
-             consent_terms_at=utcnow())
+             consent_terms_at=utcnow(), locale=get_lang(request))
     db.add(u); db.flush()
     audit(db, u.id, "user.register", str(u.id))
     track(db, u.id, "user_registered")
@@ -73,8 +79,8 @@ def forgot(body: ResetRequestIn, request: Request, db: Session = Depends(get_db)
                                   expires_at=utcnow() + timedelta(minutes=30)))
         audit(db, u.id, "auth.reset_requested"); db.commit()
         link = f"{get_settings().frontend_url}/reset-password?token={tok}"
-        send_email(u.email, "Reset your TRAIL Intelligence password",
-                   f"Use this link within 30 minutes to choose a new password:\n\n{link}\n\nIf you did not ask for this, ignore this email.")
+        subj, body = RESET_MAIL.get(u.locale, RESET_MAIL["en"])
+        send_email(u.email, subj, body.format(link=link))
         if not get_settings().is_prod:
             log.info("dev password reset link: %s/reset-password?token=%s", get_settings().frontend_url, tok,
                      extra={"dev_only": True})

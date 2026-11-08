@@ -11,7 +11,22 @@ from app.models import Domain, Exercise, ExerciseSkill, Membership, Organization
 from app.security.auth import hash_password
 
 
+def _merge_i18n(skills_by_slug, doms, exs_by_slug):
+    from app.catalog_i18n import DOMAINS_I18N, EXERCISES_I18N, LEVELS_I18N, SKILLS_I18N
+    for slug, d in doms.items():
+        d.translations = {lg: {"name": n} for lg, n in DOMAINS_I18N.get(slug, {}).items()} or None
+    for slug, sk in skills_by_slug.items():
+        tr = {lg: dict(v) for lg, v in SKILLS_I18N.get(slug, {}).items()}
+        for lg, lv in LEVELS_I18N.items():
+            tr.setdefault(lg, {})["levels"] = lv
+        sk.translations = tr or None
+    for slug, ex in exs_by_slug.items():
+        if slug in EXERCISES_I18N:
+            ex.translations = EXERCISES_I18N[slug]
+
+
 def seed_catalog(db: Session) -> None:
+    from app.catalog_roles import NEW_EXERCISES
     doms = {}
     for i, (slug, name) in enumerate(C.DOMAINS):
         d = db.query(Domain).filter_by(slug=slug).first() or Domain(slug=slug, name=name, position=i)
@@ -32,18 +47,27 @@ def seed_catalog(db: Session) -> None:
         for p in prereqs:
             if not db.get(SkillPrerequisite, (skills[slug].id, skills[p].id)):
                 db.add(SkillPrerequisite(skill_id=skills[slug].id, prerequisite_id=skills[p].id))
-    for slug, title, role, base, lvl, sk, scen, objs, dims in C.EXERCISES:
-        if db.query(Exercise).filter_by(slug=slug).first():
-            continue
-        ex = Exercise(slug=slug, title=title, scenario=scen, objectives=objs, professional_role=role,
-                      is_baseline=base, expected_level=lvl, status="published",
-                      checklist=[f"Addressed: {o}" for o in objs],
-                      resources=[{"title": "Evaluation rubric", "note": "See the rubric panel"}])
-        db.add(ex)
-        db.flush()
-        db.add(Rubric(exercise_id=ex.id, version=1, dimensions=dims))
-        for s in sk:
-            db.add(ExerciseSkill(exercise_id=ex.id, skill_id=skills[s].id))
+    specs = [{"slug": slug, "title": title, "role": role, "baseline": base, "expected_level": lvl, "skills": sk,
+              "scenario": scen, "objectives": objs, "rubric": dims, "i18n": None}
+             for slug, title, role, base, lvl, sk, scen, objs, dims in C.EXERCISES]
+    specs += [{**e, "baseline": True} for e in NEW_EXERCISES]
+    exs = {}
+    for e in specs:
+        ex = db.query(Exercise).filter_by(slug=e["slug"]).first()
+        if not ex:
+            ex = Exercise(slug=e["slug"], title=e["title"], scenario=e["scenario"], objectives=e["objectives"],
+                          professional_role=e["role"], is_baseline=e["baseline"], expected_level=e["expected_level"],
+                          status="published", checklist=[f"Addressed: {o}" for o in e["objectives"]],
+                          resources=[{"title": "Evaluation rubric", "note": "See the rubric panel"}])
+            db.add(ex)
+            db.flush()
+            db.add(Rubric(exercise_id=ex.id, version=1, dimensions=e["rubric"]))
+            for s in e["skills"]:
+                db.add(ExerciseSkill(exercise_id=ex.id, skill_id=skills[s].id))
+        exs[e["slug"]] = ex
+        if e.get("i18n"):
+            ex.translations = e["i18n"]
+    _merge_i18n(skills, doms, exs)
     db.commit()
 
 

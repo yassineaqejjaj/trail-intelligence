@@ -93,4 +93,8 @@ EXERCISES = [
      [D("permissions", "Permission scoping", "permissions least privilege tools scope limits"), D("approval", "Human approval", "approval human loop threshold escalate"), D("observability", "Observability", "logging audit trace monitor alert"), D("failure", "Failure handling", "failure timeout retry rollback safe")]),
 ]
 
-ROLES = ["Product Manager", "UX/UI Designer", "Software Developer"]
+ROLES = [
+    "Product Manager", "UX/UI Designer", "Software Developer", "Data Analyst", "Marketing & Communications",
+    "Customer Support", "Human Resources", "Finance & Accounting", "Legal & Compliance",
+    "Sales & Business Development", "Education & Training", "Operations & Project Management",
+]

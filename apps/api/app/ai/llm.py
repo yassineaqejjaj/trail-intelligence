@@ -51,7 +51,7 @@ class AnthropicProvider:
             raise LLMError(f"{type(e).__name__}") from e  # no response body / key leakage
 
 
-_WORD = re.compile(r"[a-z]{4,}")
+_WORD = re.compile(r"\w{4,}")
 
 
 class MockProvider:
@@ -65,34 +65,44 @@ class MockProvider:
     def complete(self, system: str, user: str, timeout_s: float) -> LLMResult:
         payload = json.loads(user)
         sub: str = payload["submission"]
+        lang = payload.get("language", "en")
+        L = MOCK_TEXT.get(lang, MOCK_TEXT["en"])
         low = sub.lower()
         words = set(_WORD.findall(low))
         scores, evidence = [], []
         paras = [p.strip() for p in re.split(r"\n\s*\n|\n(?=[#\-*\d])", sub) if len(p.strip()) > 30]
         for i, dim in enumerate(payload["rubric"]):
-            kws = {w for w in _WORD.findall((dim["name"] + " " + dim["description"]).lower())}
+            text = dim["name"] + " " + dim["description"] + " " + " ".join(dim.get("keywords", []))
+            kws = {w for w in _WORD.findall(text.lower())}
             hit = len(kws & words) / max(1, min(len(kws), 8))
             structure = min(1.0, len(sub) / 1200)
             frac = max(0.0, min(1.0, 0.65 * min(1.0, hit * 1.6) + 0.35 * structure))
             score = round(frac * dim["max_score"] * 2) / 2
-            scores.append({"dimension": dim["key"], "score": score,
-                           "rationale": f"Keyword/structure coverage for '{dim['name']}' (heuristic)."})
+            scores.append({"dimension": dim["key"], "score": score, "rationale": L["why"].format(name=dim["name"])})
             if paras:
-                q = paras[i % len(paras)][:160]
-                evidence.append({"dimension": dim["key"], "quote": q, "comment": "Relevant passage."})
+                evidence.append({"dimension": dim["key"], "quote": paras[i % len(paras)][:160], "comment": L["passage"]})
         good = [s for s in scores if s["score"] >= 0.6 * 5]
         out = {
             "scores": scores,
             "evidence": evidence,
-            "strengths": [f"Covers {s['dimension']}" for s in good[:3]] or ["Submission is structured"],
-            "improvements": [f"Deepen {s['dimension']} with concrete specifics"
-                             for s in sorted(scores, key=lambda s: s["score"])[:2]],
-            "next_actions": ["Revise the weakest dimension and resubmit"],
+            "strengths": [L["covers"].format(d=s["dimension"]) for s in good[:3]] or [L["structured"]],
+            "improvements": [L["deepen"].format(d=s["dimension"]) for s in sorted(scores, key=lambda s: s["score"])[:2]],
+            "next_actions": [L["next"]],
             "sufficient_evidence": len(sub.strip()) >= 150,
             "confidence": 0.5,
         }
-        text = json.dumps(out)
+        text = json.dumps(out, ensure_ascii=False)
         return LLMResult(text, len(user) // 4, len(text) // 4, self.model)
+
+
+MOCK_TEXT = {
+    "en": {"why": "Keyword/structure coverage for '{name}' (heuristic).", "passage": "Relevant passage.", "covers": "Covers {d}",
+           "structured": "Submission is structured", "deepen": "Deepen {d} with concrete specifics", "next": "Revise the weakest dimension and resubmit"},
+    "fr": {"why": "Couverture mots-clés/structure pour « {name} » (heuristique).", "passage": "Passage pertinent.", "covers": "Couvre {d}",
+           "structured": "La soumission est structurée", "deepen": "Approfondir {d} avec des éléments concrets", "next": "Reprendre la dimension la plus faible et soumettre à nouveau"},
+    "ar": {"why": "تغطية الكلمات المفتاحية والبنية لـ «{name}» (تقدير استدلالي).", "passage": "مقطع ذو صلة.", "covers": "يغطي {d}",
+           "structured": "الإجابة منظّمة", "deepen": "تعميق {d} بتفاصيل ملموسة", "next": "راجع البُعد الأضعف ثم أعد التقديم"},
+}
 
 
 def get_provider() -> LLMProvider:

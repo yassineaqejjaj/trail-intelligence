@@ -38,6 +38,7 @@ class User(TimestampMixin, Base):
     onboarding_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     consent_terms_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     share_with_org: Mapped[bool] = mapped_column(Boolean, default=False)
+    locale: Mapped[str] = mapped_column(String(5), default="en", server_default="en")
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     __table_args__ = (CheckConstraint("role in ('learner','trainer','org_admin','platform_admin')", name="ck_user_role"),)
@@ -65,6 +66,7 @@ class Domain(TimestampMixin, Base):
     slug: Mapped[str] = mapped_column(String(64), unique=True)
     name: Mapped[str] = mapped_column(String(120))
     position: Mapped[int] = mapped_column(Integer, default=0)
+    translations: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
 
 class Skill(TimestampMixin, Base):
@@ -76,6 +78,7 @@ class Skill(TimestampMixin, Base):
     framework_version: Mapped[str] = mapped_column(String(16), default="1.0")
     levels: Mapped[dict] = mapped_column(JSON, default=dict)  # {"1": "...", ...}
     criteria: Mapped[list] = mapped_column(JSON, default=list)
+    translations: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     domain: Mapped[Domain] = relationship(lazy="joined")
 
 
@@ -101,6 +104,7 @@ class Exercise(TimestampMixin, Base):
     author_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     org_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("organizations.id"), nullable=True, index=True)
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False)
+    translations: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
 
 class ExerciseSkill(Base):
@@ -155,6 +159,7 @@ class Assessment(TimestampMixin, Base):
     reviewer_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     review_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    language: Mapped[str] = mapped_column(String(5), default="en", server_default="en")
 
 
 class SkillEvidence(TimestampMixin, Base):

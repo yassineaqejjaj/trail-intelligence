@@ -5,10 +5,11 @@ export class ApiError extends Error {
 // Same-origin: Next rewrites /api/v1/* to the Railway API, so the session cookie is first-party.
 export async function api<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> {
   const { json, ...rest } = init;
+  const lang = typeof document !== "undefined" ? /(?:^|; )lang=(\w+)/.exec(document.cookie)?.[1] : undefined;
   const res = await fetch(`/api/v1${path}`, {
     credentials: "include",
     ...rest,
-    headers: { ...(json !== undefined ? { "Content-Type": "application/json" } : {}), ...rest.headers },
+    headers: { ...(json !== undefined ? { "Content-Type": "application/json" } : {}), ...(lang ? { "X-Lang": lang } : {}), ...rest.headers },
     body: json !== undefined ? JSON.stringify(json) : rest.body,
   });
   if (res.status === 204) return undefined as T;
@@ -28,4 +29,4 @@ export type Assessment = { id: string; submission_id: string; status: "queued" |
 export type Progress = { skills: Skill[]; summary: { assessed: number; total: number; verified: number; provisional: number }; recommendation: { skill_slug: string | null; exercise_slug: string | null; exercise_id: string | null; explanation: string }; disclaimer: string };
 
 export const LEVEL_NAMES = ["Not Assessed", "Awareness", "Assisted Practitioner", "Autonomous Practitioner", "Advanced Practitioner", "Expert / Mentor"];
-export const ROLES = ["Product Manager", "UX/UI Designer", "Software Developer"];
+export type Role = { key: string; label: string };

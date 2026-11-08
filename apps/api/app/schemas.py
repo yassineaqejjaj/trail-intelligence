@@ -38,6 +38,7 @@ class UserOut(ORM):
     objectives: list
     onboarding_completed: bool
     share_with_org: bool
+    locale: str = "en"
 
 
 class OnboardingIn(BaseModel):
@@ -49,6 +50,7 @@ class OnboardingIn(BaseModel):
 class SettingsIn(BaseModel):
     full_name: str | None = Field(default=None, max_length=200)
     share_with_org: bool | None = None
+    locale: str | None = None
 
 
 class SkillOut(BaseModel):

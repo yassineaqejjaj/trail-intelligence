@@ -23,7 +23,7 @@ def run_assessment(c, content):
 
 def test_health():
     r = TestClient(app).get("/health")
-    assert r.status_code == 200 and r.json()["migration"] == "0001"
+    assert r.status_code == 200 and r.json()["migration"] == "0002"
 
 
 def test_register_login_logout_and_cookie_flags():
@@ -204,3 +204,27 @@ def test_stale_queue_is_swept():
         row.status = "queued"; row.scores = []; row.updated_at = row.updated_at.replace(year=2020); db.commit()
     assert sweep_once() >= 1
     assert c.get(f"/api/v1/assessments/{a['id']}").json()["status"] in ("completed", "pending_human_review")
+
+
+def test_roles_are_generalised_and_localised(learner):
+    en = learner.get("/api/v1/catalog/roles").json()
+    assert len(en) >= 12 and {"key": "Data Analyst", "label": "Data Analyst"} in en
+    fr = learner.get("/api/v1/catalog/roles", headers={"X-Lang": "fr"}).json()
+    assert next(r for r in fr if r["key"] == "Product Manager")["label"] == "Chef de produit"
+    ar = learner.get("/api/v1/catalog/roles", headers={"Accept-Language": "ar-MA,ar;q=0.9"}).json()
+    assert next(r for r in ar if r["key"] == "Product Manager")["label"] == "مدير منتج"
+
+
+def test_onboarding_accepts_any_catalog_role_and_stores_locale():
+    c = TestClient(app)
+    c.post("/api/v1/auth/register", json={"email": "role1@example.com", "password": PW, "accept_terms": True}, headers={"X-Lang": "fr"})
+    r = c.post("/api/v1/users/me/onboarding", json={"professional_role": "Legal & Compliance", "objectives": []}, headers={"X-Lang": "fr"})
+    assert r.status_code == 200 and r.json()["locale"] == "fr"
+    assert c.post("/api/v1/users/me/onboarding", json={"professional_role": "Astronaut"}).status_code == 422
+
+
+def test_progress_disclaimer_and_recommendation_localised(learner):
+    fr = learner.get("/api/v1/progress/me", headers={"X-Lang": "fr"}).json()
+    assert "provisoires" in fr["disclaimer"] and "niveau" in fr["recommendation"]["explanation"]
+    ar = learner.get("/api/v1/progress/me", headers={"X-Lang": "ar"}).json()
+    assert "مؤقتة" in ar["disclaimer"]
