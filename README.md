@@ -2,7 +2,7 @@
 
 ![Project overview](docs/assets/github-cover.svg)
 
-> **Mesurer, développer et prouver les compétences IA pratiques d'un professionnel** | **Statut :** en production, évaluateur IA en mode heuristique (clé LLM à brancher) · [application](__WEB_URL__) · [API](__API_URL__/docs)
+> **Mesurer, développer et prouver les compétences IA pratiques d'un professionnel** | **Statut :** en production, évaluateur IA en mode heuristique (clé LLM à brancher) · [application](https://trail-intelligence.vercel.app) · [API](https://trail-api-production-7487.up.railway.app/docs)
 >
 > [Architecture](docs/architecture/overview.md) · [Déploiement](docs/deployment) · [Périmètre et limites](docs/product/mvp-scope.md) · [Code source](https://github.com/yassineaqejjaj/trail-intelligence)
 
@@ -66,7 +66,7 @@ Détails et décisions : [docs/architecture/overview.md](docs/architecture/overv
 
 ## 4. Sécurité et vie privée
 
-Argon2, cookies `httpOnly`/`Secure`, contrôle d'`Origin` sur les méthodes non sûres, limitation de débit (auth et IA), limite de taille des requêtes, autorisation **au niveau de la ressource** (404 pour un autre tenant), journal d'audit, secrets hors dépôt. RGPD : consentement à l'inscription, **export** et **suppression** du compte, agrégats entreprise sur consentement avec seuil k ≥ 3, purge planifiée (`python -m app.admin maintenance`). Pages légales : [confidentialité](__WEB_URL__/privacy), [conditions](__WEB_URL__/terms), [méthodologie](__WEB_URL__/methodology) — **brouillons à faire relire** par un juriste.
+Argon2, cookies `httpOnly`/`Secure`, contrôle d'`Origin` sur les méthodes non sûres, limitation de débit (auth et IA), limite de taille des requêtes, autorisation **au niveau de la ressource** (404 pour un autre tenant), journal d'audit, secrets hors dépôt. RGPD : consentement à l'inscription, **export** et **suppression** du compte, agrégats entreprise sur consentement avec seuil k ≥ 3, purge planifiée (`python -m app.admin maintenance`). Pages légales : [confidentialité](https://trail-intelligence.vercel.app/privacy), [conditions](https://trail-intelligence.vercel.app/terms), [méthodologie](https://trail-intelligence.vercel.app/methodology) — **brouillons à faire relire** par un juriste.
 
 ## 5. Démarrer en local
 
