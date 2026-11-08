@@ -10,3 +10,8 @@ export const useSubmissions = () => useQuery({ queryKey: ["submissions"], queryF
 export type PathData = { steps: { skill: Skill; exercises: string[]; complete: boolean }[]; completed: number; total: number; next: string | null };
 export const usePath = () => useQuery({ queryKey: ["path"], queryFn: () => api<PathData>("/learning-paths/me") });
 export const useRoles = () => useQuery({ queryKey: ["roles"], queryFn: () => api<Role[]>("/catalog/roles"), staleTime: 3600_000 });
+/** Maps a professional_role key to its localised label (falls back to the key). */
+export function useRoleLabel() {
+  const roles = useRoles().data;
+  return (key?: string | null) => (key ? (roles?.find((r) => r.key === key)?.label ?? key) : "");
+}

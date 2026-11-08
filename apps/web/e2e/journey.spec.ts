@@ -78,3 +78,27 @@ test("unauthenticated users are redirected; learners can't see trainer data", as
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/login/);
 });
+
+test("French learner in a non-tech profession; Arabic switches to RTL", async ({ page }) => {
+  await page.context().addCookies([{ name: "lang", value: "fr", url: "http://127.0.0.1:3731" }]);
+  await page.goto("/register");
+  await expect(page.locator("html")).toHaveAttribute("lang", "fr");
+  await page.getByLabel(/Nom complet/i).fill("Léa Martin");
+  await page.getByLabel(/E-?mail/i).fill(`fr+${Date.now()}@example.com`);
+  await page.getByLabel(/Mot de passe/i).fill("e2e-learner-pass-123");
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: /Créer/i }).click();
+  await expect(page).toHaveURL(/onboarding/);
+  await page.getByRole("radio", { name: /Juridique|conformité/i }).click();
+  for (const n of [0, 1]) { void n; await page.getByRole("button", { name: /Continuer|Suivant/i }).click(); }
+  await page.getByRole("button", { name: /Terminer|Finir/i }).click();
+  await expect(page).toHaveURL(/dashboard/);
+  await page.getByRole("link", { name: /référence|baseline/i }).first().click();
+  await expect(page.getByRole("heading", { name: /Référence/ })).toBeVisible();
+
+  // switch to Arabic from the top bar: document becomes RTL and content is Arabic
+  await page.getByLabel(/Langue/i).selectOption("ar");
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await expect(page.locator("html")).toHaveAttribute("lang", "ar");
+  await expect(page.getByRole("heading", { name: /تقييم أساسي/ })).toBeVisible({ timeout: 10_000 });
+});

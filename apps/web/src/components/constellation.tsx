@@ -3,7 +3,8 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Skill } from "@/lib/api";
-import { StateBadge } from "./ui";
+import { useT } from "@/i18n/provider";
+import { StateBadge, stateLabel } from "./ui";
 
 // Fixed layout on a 1000×560 canvas, one node per AI domain.
 const POS: Record<string, [number, number]> = {
@@ -28,6 +29,7 @@ export function toDomains(skills: Skill[]): DomainNode[] {
 }
 
 export function Constellation({ skills, selected, onSelect, height = 440 }: { skills: Skill[]; selected?: string | null; onSelect?: (slug: string | null) => void; height?: number }) {
+  const t = useT();
   const domains = useMemo(() => toDomains(skills), [skills]);
   const edges = useMemo(() => {
     const dom = new Map(skills.map((s) => [s.slug, s.domain_slug]));
@@ -41,7 +43,7 @@ export function Constellation({ skills, selected, onSelect, height = 440 }: { sk
   if (focus) edges.forEach(([a, b]) => { if (a === focus || b === focus) { related.add(a); related.add(b); } });
 
   return (
-    <div role="group" aria-label="AI skills constellation" className="relative overflow-hidden rounded-[10px]" style={{ height, background: "radial-gradient(ellipse at 40% 45%, color-mix(in srgb, var(--blue) 7%, transparent), transparent 65%)" }}>
+    <div dir="ltr" role="group" aria-label={t("AI skills constellation")} className="relative overflow-hidden rounded-[10px]" style={{ height, background: "radial-gradient(ellipse at 40% 45%, color-mix(in srgb, var(--blue) 7%, transparent), transparent 65%)" }}>
       <svg viewBox="0 0 1000 560" preserveAspectRatio="none" width="100%" height="100%" className="absolute inset-0" aria-hidden="true">
         {edges.map(([a, b]) => { const [x1, y1] = POS[a] ?? [0, 0], [x2, y2] = POS[b] ?? [0, 0]; const on = focus && (a === focus || b === focus);
           return <line key={a + b} x1={x1} y1={y1} x2={x2} y2={y2} stroke={on ? "var(--blue)" : "var(--border2)"} strokeWidth={on ? 2 : 1.2} strokeOpacity={focus && !on ? 0.25 : 0.9} vectorEffect="non-scaling-stroke" />; })}
@@ -52,7 +54,7 @@ export function Constellation({ skills, selected, onSelect, height = 440 }: { sk
         const size = 22 + d.level * 4;
         const ring = d.state === "verified" ? { background: "var(--green)" } : d.state === "provisional" ? { border: "2px solid var(--blue)", background: "linear-gradient(90deg, var(--blue) 50%, transparent 50%)" } : { border: "1.5px dashed var(--border2)" };
         return (
-          <button key={d.slug} type="button" aria-label={`${d.name}, level ${d.level}, ${d.state.replace("_", " ")}`} aria-pressed={selected === d.slug}
+          <button key={d.slug} type="button" aria-label={t("{name}, level {level}, {state}", { name: d.name, level: d.level, state: stateLabel(t, d.state) })} aria-pressed={selected === d.slug}
             onMouseEnter={() => setHover(d.slug)} onMouseLeave={() => setHover(null)} onFocus={() => setHover(d.slug)} onBlur={() => setHover(null)}
             onClick={() => onSelect?.(selected === d.slug ? null : d.slug)}
             className={clsx("absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5 rounded-xl p-1 transition-opacity", dim && "opacity-35")} style={{ left: `${x / 10}%`, top: `${(y / 560) * 100}%` }}>
@@ -61,19 +63,20 @@ export function Constellation({ skills, selected, onSelect, height = 440 }: { sk
           </button>
         );
       })}
-      <div className="absolute bottom-3 right-3 hidden flex-wrap gap-3 rounded-[10px] border border-line px-3 py-2 text-[11.5px] text-fg2 md:flex" style={{ background: "color-mix(in srgb, var(--surface) 85%, transparent)" }}>
-        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-[1.5px] border-dashed border-line2" />Not assessed</span>
-        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-blue" style={{ background: "linear-gradient(90deg, var(--blue) 50%, transparent 50%)" }} />Provisional (AI only)</span>
-        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-green" />Verified by a human</span>
+      <div className="absolute bottom-3 end-3 hidden flex-wrap gap-3 rounded-[10px] border border-line px-3 py-2 text-[11.5px] text-fg2 md:flex" style={{ background: "color-mix(in srgb, var(--surface) 85%, transparent)" }}>
+        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-[1.5px] border-dashed border-line2" />{t("Not assessed")}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border-2 border-blue" style={{ background: "linear-gradient(90deg, var(--blue) 50%, transparent 50%)" }} />{t("Provisional (AI only)")}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-green" />{t("Verified by a human")}</span>
       </div>
     </div>
   );
 }
 
 export function DomainDetail({ domain, onClose }: { domain: DomainNode; onClose: () => void }) {
+  const t = useT();
   return (
     <div className="rounded-[14px] border border-line bg-elevated p-4 shadow-xl">
-      <div className="flex items-center justify-between"><StateBadge state={domain.state} /><button type="button" onClick={onClose} aria-label="Close detail" className="rounded-md px-2 text-fg2 hover:text-fg">✕</button></div>
+      <div className="flex items-center justify-between"><StateBadge state={domain.state} /><button type="button" onClick={onClose} aria-label={t("Close detail")} className="rounded-md px-2 text-fg2 hover:text-fg">✕</button></div>
       <p className="h mt-2 text-[17px] font-semibold">{domain.name} <span className="font-mono text-[13px] text-muted">L{domain.level}</span></p>
       <ul className="mt-2 space-y-1.5 text-[12.5px] text-fg2">{domain.skills.map((s) => <li key={s.id} className="flex justify-between gap-3"><Link href={`/skills/${s.id}`} className="hover:text-fg hover:underline">{s.name}</Link><span className="font-mono">L{s.level}</span></li>)}</ul>
     </div>

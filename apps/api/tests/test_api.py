@@ -66,7 +66,7 @@ def test_password_reset_flow(caplog):
 
 def test_catalog_counts(learner):
     assert len(learner.get("/api/v1/skills").json()) == 15
-    assert len(learner.get("/api/v1/exercises").json()) == 10
+    assert len(learner.get("/api/v1/exercises").json()) == 19
 
 
 def test_full_learning_loop(learner):
@@ -228,3 +228,34 @@ def test_progress_disclaimer_and_recommendation_localised(learner):
     assert "provisoires" in fr["disclaimer"] and "niveau" in fr["recommendation"]["explanation"]
     ar = learner.get("/api/v1/progress/me", headers={"X-Lang": "ar"}).json()
     assert "مؤقتة" in ar["disclaimer"]
+
+
+def test_every_role_has_a_baseline_with_fr_ar_content(learner):
+    roles = [r["key"] for r in learner.get("/api/v1/catalog/roles").json()]
+    for lang in ("en", "fr", "ar"):
+        ex = learner.get("/api/v1/exercises", headers={"X-Lang": lang}).json()
+        for role in roles:
+            b = [e for e in ex if e["professional_role"] == role and e["is_baseline"]]
+            assert b, (lang, role)
+            assert all(d["name"] and d["description"] for d in b[0]["rubric"])
+    fr = learner.get("/api/v1/exercises", headers={"X-Lang": "fr"}).json()
+    en = learner.get("/api/v1/exercises").json()
+    assert next(e for e in fr if e["slug"] == "pm-baseline")["title"] != next(e for e in en if e["slug"] == "pm-baseline")["title"]
+
+
+def test_arabic_and_french_submissions_are_scored_by_the_heuristic():
+    # the mock scorer must not be English-only: a long, on-topic fr/ar answer should beat a vague one
+    from app import catalog
+    from app.ai.assessment import assess
+    from app.ai.llm import MockProvider
+    from app.catalog_i18n import EXERCISES_I18N
+    ex = next(e for e in catalog.EXERCISES if e[0] == "pm-baseline")
+    for lang in ("fr", "ar"):
+        rt = EXERCISES_I18N["pm-baseline"][lang]["rubric"]
+        rubric = [{**d, **rt[d["key"]]} for d in ex[8]]
+        kws = " ".join(" ".join(v["keywords"]) for v in rt.values())
+        good = (kws + ". ") * 6
+        vague = ("نص عام بلا مضمون محدد " if lang == "ar" else "texte général sans contenu précis ") * 12
+        g = assess(MockProvider(), exercise={"title": "t", "scenario": "s"}, rubric=rubric, submission=good, expected_level=2, language=lang)
+        v = assess(MockProvider(), exercise={"title": "t", "scenario": "s"}, rubric=rubric, submission=vague, expected_level=2, language=lang)
+        assert (g.overall_score or 0) > (v.overall_score or 0) + 20, (lang, g.overall_score, v.overall_score)

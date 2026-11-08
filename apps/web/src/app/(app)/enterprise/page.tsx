@@ -1,24 +1,26 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { Card, EmptyState, ErrorState, LinkButton, Loading, PageHeader } from "@/components/ui";
+import { Card, EmptyState, ErrorState, Label, Loading, PageHeader } from "@/components/ui";
+import { useI18n } from "@/i18n/provider";
 import { api } from "@/lib/api";
 import { useOrg, type Analytics } from "@/lib/org";
 
 export default function Enterprise() {
+  const { t, fmtNum } = useI18n();
   const org = useOrg();
   const a = useQuery({ queryKey: ["analytics", org.data?.id], enabled: !!org.data, queryFn: () => api<Analytics>(`/organizations/${org.data!.id}/analytics`) });
   if (org.isLoading) return <Loading />;
-  if (!org.data) return <EmptyState title="No organization" hint="You are not an administrator of any organization." />;
-  if (a.isError) return <ErrorState error={a.error} />;
+  if (!org.data) return <EmptyState title={t("No organization")} hint={t("You are not an administrator of any organization.")} />;
+  if (a.isError) return <ErrorState error={a.error} retry={() => a.refetch()} />;
+  const d = a.data;
   return (
     <>
-      <PageHeader title={org.data.name} sub="Organization overview" />
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card><p className="text-sm text-fg2">Members</p><p className="font-display text-3xl">{a.data?.members ?? "…"}</p></Card>
-        <Card><p className="text-sm text-fg2">Sharing aggregates</p><p className="font-display text-3xl">{a.data?.consenting_members ?? "…"}</p></Card>
-        <Card><p className="text-sm text-fg2">Privacy</p><p className="text-sm">Aggregates need 3+ consenting members. Individual submissions are never shown.</p></Card>
+      <PageHeader title={org.data.name} sub={t("Organization overview")} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card><Label>{t("Members")}</Label><p className="mt-2 font-display text-3xl">{d ? fmtNum(d.members) : "…"}</p></Card>
+        <Card><Label>{t("Sharing aggregates")}</Label><p className="mt-2 font-display text-3xl">{d ? fmtNum(d.consenting_members) : "…"}</p></Card>
       </div>
-      <div className="mt-4 flex gap-2"><LinkButton href="/enterprise/skills" variant="outline">Skills intelligence</LinkButton><LinkButton href="/enterprise/teams" variant="outline">Teams</LinkButton><LinkButton href="/enterprise/programs" variant="outline">Programs</LinkButton></div>
+      <Card className="mt-4 border-blue/40"><Label>{t("Privacy")}</Label><p className="mt-2 text-sm text-fg2">{t("Aggregates need 3+ consenting members. Individual submissions are never shown.")}</p></Card>
     </>
   );
 }

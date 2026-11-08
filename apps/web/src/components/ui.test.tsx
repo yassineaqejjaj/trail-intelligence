@@ -1,7 +1,14 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { I18nProvider } from "@/i18n/provider";
 import { CommandPalette } from "./command-palette";
 import { EmptyState, LevelBar, StateBadge } from "./ui";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
+const wrap = (el: ReactElement, locale: "en" | "fr" | "ar" = "en") => <QueryClientProvider client={new QueryClient()}><I18nProvider locale={locale}>{el}</I18nProvider></QueryClientProvider>;
+const render = (el: ReactElement, locale: "en" | "fr" | "ar" = "en") => rtlRender(wrap(el, locale));
 
 describe("ui", () => {
   it("labels provisional vs verified skill state distinctly", () => {
@@ -12,6 +19,12 @@ describe("ui", () => {
   it("exposes level to assistive tech", () => {
     render(<LevelBar level={3} />);
     expect(screen.getByRole("img", { name: "Level 3 of 5" })).toBeInTheDocument();
+  });
+  it("localises state badges (fr, ar)", () => {
+    const fr = render(<StateBadge state="verified" />, "fr");
+    expect(fr.container).toHaveTextContent("Vérifié");
+    const ar = render(<StateBadge state="verified" />, "ar");
+    expect(ar.container).toHaveTextContent("موثّق");
   });
   it("renders empty state", () => {
     render(<EmptyState title="Nothing here" />);

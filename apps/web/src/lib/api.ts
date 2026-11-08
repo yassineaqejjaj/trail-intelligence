@@ -30,3 +30,5 @@ export type Progress = { skills: Skill[]; summary: { assessed: number; total: nu
 
 export const LEVEL_NAMES = ["Not Assessed", "Awareness", "Assisted Practitioner", "Autonomous Practitioner", "Advanced Practitioner", "Expert / Mentor"];
 export type Role = { key: string; label: string };
+/** Translated level name; `t` comes from useT()/useI18n(). */
+export const levelName = (t: (k: string) => string, n: number) => t(LEVEL_NAMES[n] ?? LEVEL_NAMES[0]);

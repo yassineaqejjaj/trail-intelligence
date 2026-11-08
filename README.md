@@ -32,13 +32,14 @@ Les plateformes de formation mesurent surtout ce qui a été *consommé*. TRAIL 
 | Écran | Ce qu'il fait |
 | --- | --- |
 | **Dashboard** | Constellation des 11 domaines IA (prérequis, niveaux, état), prochaine action recommandée avec explication, parcours, assessments récents |
+| **12 métiers, 3 langues** | Product Manager, UX/UI, Développeur, Data Analyst, Marketing & Communication, Support client, RH, Finance & Comptabilité, Juridique & Conformité, Ventes, Éducation & Formation, Opérations & gestion de projet : chacun avec son exercice de référence. Interface, contenus, évaluations et e-mails en **anglais, français et arabe (RTL)** |
 | **Practice Lab** | Espace d'exercice en trois zones : scénario / grille · éditeur avec sauvegarde automatique · checklist. Révisions, protection contre la perte de travail |
 | **Résultats** | Niveau, score par dimension, **preuves citées**, forces, axes d'amélioration, statut (provisoire, en revue humaine, vérifié, preuve insuffisante) |
 | **Passport** | Profil de compétences : ce qui est *vérifié* par un humain est distingué de ce qui est *provisoire* |
 | **Trainer Studio** | Création d'exercices, grilles versionnées, file de revue, ajustement de niveau avec justification journalisée |
 | **Enterprise** | Membres, programmes, compétences agrégées **sur consentement**, jamais pour moins de 3 personnes |
 
-Cadre de compétences versionné : 11 domaines (AI Foundations, Prompt Engineering, Context Engineering, AI Product Discovery, AI Product Delivery, AI-Assisted Development, RAG, Agentic AI, AI Evaluation, Responsible AI, AI Economics), 15 compétences avec prérequis, niveaux 0 à 5, 10 exercices (3 baselines : Product Manager, UX/UI Designer, Software Developer).
+Cadre de compétences versionné : 11 domaines (AI Foundations, Prompt Engineering, Context Engineering, AI Product Discovery, AI Product Delivery, AI-Assisted Development, RAG, Agentic AI, AI Evaluation, Responsible AI, AI Economics), 15 compétences avec prérequis, niveaux 0 à 5, 19 exercices dont 12 baselines (une par métier). Le contenu canonique est en anglais ; les versions fr/ar vivent dans des colonnes `translations` et l'API répond dans la langue demandée (`X-Lang` / `Accept-Language`).
 
 ## 2. Architecture
 
@@ -58,6 +59,7 @@ Détails et décisions : [docs/architecture/overview.md](docs/architecture/overv
 
 * Entrée : exercice + grille versionnée + soumission + niveau attendu. Sortie : scores par dimension, preuves, forces, axes, actions.
 * **Sortie validée, jamais « réparée »** : JSON → Pydantic → clés de la grille → scores bornés → **chaque citation doit exister dans la soumission**. Sinon : nouvelles tentatives bornées, puis statut `failed`.
+* Les retours (forces, axes, actions) sont rédigés **dans la langue de l'utilisateur** ; l'évaluateur heuristique comprend les mots-clés fr/ar des grilles.
 * Le **niveau est calculé par la plateforme** à partir du score pondéré, pas choisi par le modèle. Plafond automatique **L3** ; L4+, tentative d'injection de prompt ou faible confiance → **revue humaine**.
 * La soumission est traitée comme **non fiable** : transmise comme donnée JSON, instructions système séparées, motifs d'injection détectés.
 * Métadonnées stockées : version de prompt, de grille, modèle, tokens, coût, latence, tentatives.
@@ -102,9 +104,11 @@ railway run --service trail-api python -m app.admin add-member vous@exemple.com 
 
 ## 7. Ce qui est vérifié et ce qui ne l'est pas
 
-**Vérifié** : 31 tests d'API, 5 tests unitaires front, 3 parcours Playwright (inscription → onboarding → exercice → feedback → progression ; injection → revue formateur → compétence vérifiée ; redirection non authentifié), migrations sur PostgreSQL 16, `/health` en production.
+**Vérifié** : 36 tests d'API, 8 tests unitaires front, 4 parcours Playwright (dont un parcours français et le passage à l'arabe/RTL) (inscription → onboarding → exercice → feedback → progression ; injection → revue formateur → compétence vérifiée ; redirection non authentifié), migrations sur PostgreSQL 16, `/health` en production.
 
 **Non vérifié / limites connues** :
+
+* Les traductions fr/ar (interface, légal, exercices) ont été rédigées par IA et **n'ont pas été relues par des locuteurs natifs** ; les exercices des 9 métiers ajoutés n'ont pas été validés par des praticiens de ces métiers.
 
 * Aucune **calibration** de l'évaluateur ; aucune affirmation de fiabilité humaine. Le mode `anthropic` n'a jamais tourné en réel.
 * L'envoi d'e-mails n'est pas validé tant qu'un fournisseur n'est pas configuré.
