@@ -2,7 +2,7 @@
 
 ![Project overview](docs/assets/github-cover.svg)
 
-> **Mesurer, développer et prouver les compétences IA pratiques d'un professionnel** | **Statut :** en production, évaluateur IA en mode heuristique (clé LLM à brancher) · [application](https://trail-intelligence.vercel.app) · [API](https://trail-api-production-7487.up.railway.app/docs)
+> **Mesurer, développer et prouver les compétences IA pratiques d'un professionnel** | **Statut :** en production, évaluateur IA en mode heuristique (clé LLM à brancher) · [application](https://trail-intelligence.vercel.app) · [API](https://trail-api-production-7487.up.railway.app/health)
 >
 > [Architecture](docs/architecture/overview.md) · [Déploiement](docs/deployment) · [Périmètre et limites](docs/product/mvp-scope.md) · [Code source](https://github.com/yassineaqejjaj/trail-intelligence)
 
