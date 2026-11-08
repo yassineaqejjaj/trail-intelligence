@@ -81,12 +81,13 @@ class MockProvider:
             scores.append({"dimension": dim["key"], "score": score, "rationale": L["why"].format(name=dim["name"])})
             if paras:
                 evidence.append({"dimension": dim["key"], "quote": paras[i % len(paras)][:160], "comment": L["passage"]})
+        names = {d["key"]: d["name"] for d in payload["rubric"]}
         good = [s for s in scores if s["score"] >= 0.6 * 5]
         out = {
             "scores": scores,
             "evidence": evidence,
-            "strengths": [L["covers"].format(d=s["dimension"]) for s in good[:3]] or [L["structured"]],
-            "improvements": [L["deepen"].format(d=s["dimension"]) for s in sorted(scores, key=lambda s: s["score"])[:2]],
+            "strengths": [L["covers"].format(d=names[s["dimension"]]) for s in good[:3]] or [L["structured"]],
+            "improvements": [L["deepen"].format(d=names[s["dimension"]]) for s in sorted(scores, key=lambda s: s["score"])[:2]],
             "next_actions": [L["next"]],
             "sufficient_evidence": len(sub.strip()) >= 150,
             "confidence": 0.5,
