@@ -6,7 +6,7 @@ import sys
 from sqlalchemy.orm import Session
 
 from app import catalog as C
-from app.core.db import session_factory
+from app.core.db import session_factory, utcnow
 from app.models import Domain, Exercise, ExerciseSkill, Membership, Organization, Rubric, Skill, SkillPrerequisite, User
 from app.security.auth import hash_password
 
@@ -71,21 +71,61 @@ def seed_catalog(db: Session) -> None:
     db.commit()
 
 
+def _demo_answer(rubric: list[dict], rich: bool) -> str:
+    """A plausible on-topic answer built from the rubric itself (demo data only)."""
+    parts = [f"{d['name']}: {d['description']}." for d in rubric]
+    return " ".join(parts * (3 if rich else 1)) if rich else " ".join(parts)[:420]
+
+
+def _evaluate_demo(db: Session, user: User, slug: str, rich: bool) -> None:
+    """Run the real assessment pipeline (mock provider) so demo data goes through the same code as real data."""
+    from app.ai.assessment import assess
+    from app.ai.llm import MockProvider
+    from app.models import Assessment, SkillEvidence, Submission
+    ex = db.query(Exercise).filter_by(slug=slug).first()
+    rub = db.query(Rubric).filter_by(exercise_id=ex.id).order_by(Rubric.version.desc()).first()
+    text = _demo_answer(rub.dimensions, rich)
+    sub = Submission(user_id=user.id, exercise_id=ex.id, content=text, status="evaluated", submitted_at=utcnow())
+    db.add(sub)
+    db.flush()
+    r = assess(MockProvider(), exercise={"title": ex.title, "scenario": ex.scenario}, rubric=rub.dimensions,
+               submission=text, expected_level=ex.expected_level)
+    a = Assessment(submission_id=sub.id, user_id=user.id, status=r.status, rubric_version=rub.version, scores=r.scores,
+                   overall_score=r.overall_score, level=r.level, evidence=r.evidence, strengths=r.strengths,
+                   improvements=r.improvements, next_actions=r.next_actions, model=r.model, prompt_version=r.prompt_version,
+                   attempts=r.attempts, error=r.error, language="en")
+    db.add(a)
+    db.flush()
+    if r.level and r.status in ("completed", "pending_human_review"):
+        for link in db.query(ExerciseSkill).filter_by(exercise_id=ex.id):
+            db.add(SkillEvidence(user_id=user.id, skill_id=link.skill_id, assessment_id=a.id, level=r.level, verified=False))
+
+
 def seed_demo(db: Session) -> dict:
     if db.query(Organization).filter_by(is_demo=True).first():
         print("Demo data already present"); return {}
     org = Organization(name="Acme (DEMO DATA)", is_demo=True)
     db.add(org); db.flush()
     creds = {}
-    for email, role, mrole in [("demo.admin@example.com", "org_admin", "org_admin"),
-                               ("demo.trainer@example.com", "trainer", "member"),
-                               ("demo.learner@example.com", "learner", "member")]:
+
+    def mk(email, role, mrole, name, pro, share=False):
         pw = secrets.token_urlsafe(14)
-        u = User(email=email, password_hash=hash_password(pw), full_name="Demo " + role, role=role,
-                 is_demo=True, onboarding_completed=True)
+        u = User(email=email, password_hash=hash_password(pw), full_name=name, role=role, is_demo=True,
+                 onboarding_completed=True, professional_role=pro, share_with_org=share, locale="en")
         db.add(u); db.flush()
         db.add(Membership(org_id=org.id, user_id=u.id, role=mrole, team="Demo"))
         creds[email] = pw
+        return u
+
+    mk("demo.admin@example.com", "org_admin", "org_admin", "Demo Admin", None)
+    mk("demo.trainer@example.com", "trainer", "member", "Demo Trainer", "Education & Training")
+    learner = mk("demo.learner@example.com", "learner", "member", "Demo Learner", "Product Manager", share=True)
+    _evaluate_demo(db, learner, "pm-baseline", rich=True)
+    # Three synthetic colleagues (consenting) so the enterprise aggregate (k>=3) is visible.
+    for i, (pro, slug, rich) in enumerate([("Human Resources", "hr-baseline", True), ("Legal & Compliance", "lg-baseline", False),
+                                           ("Data Analyst", "da-baseline", True)], 1):
+        u = mk(f"demo.member{i}@example.com", "learner", "member", f"Demo Member {i}", pro, share=True)
+        _evaluate_demo(db, u, slug, rich)
     db.commit()
     return creds
 
