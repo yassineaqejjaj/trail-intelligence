@@ -8,5 +8,5 @@ COPY . .
 RUN useradd -m app && chown -R app /app
 USER app
 ENV PATH="/app/.venv/bin:$PATH"
-# Migrations are applied explicitly (railway preDeploy) — never destructive/auto-downgrade.
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers"]
+# Additive migrations + idempotent catalog seed run before serving (never a downgrade). Single replica assumed.
+CMD ["sh", "-c", "alembic upgrade head && python -m app.seed && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips=*"]

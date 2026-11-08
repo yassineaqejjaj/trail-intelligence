@@ -35,8 +35,8 @@ def start_sweeper(interval_s: int = 15) -> threading.Event:
         while not stop.wait(interval_s):
             try:
                 sweep_once()
-            except Exception:
-                log.exception("sweeper failed")
+            except Exception as e:  # e.g. DB not migrated yet; keep serving, retry next tick
+                log.warning("sweeper skipped: %s", type(e).__name__)
 
     threading.Thread(target=loop, name="assessment-sweeper", daemon=True).start()
     return stop
