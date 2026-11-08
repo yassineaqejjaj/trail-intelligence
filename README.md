@@ -43,9 +43,12 @@ Cadre de compétences versionné : 11 domaines (AI Foundations, Prompt Engineeri
 
 ## 2. Architecture
 
-```
-Navigateur ──(même origine /api/v1/*)──► Vercel (Next.js 16) ──rewrite──► Railway · trail-api (FastAPI) ──► Railway · PostgreSQL (réseau privé)
-                                                                                └─► fournisseur LLM (abstraction `LLMProvider`)
+```mermaid
+flowchart LR
+    browser["Navigateur"] -->|"Même origine /api/v1/*"| web["Vercel · Next.js 16"]
+    web -->|"Rewrite"| api["Railway · trail-api / FastAPI"]
+    api -->|"Réseau privé"| pg[("Railway · PostgreSQL")]
+    api --> provider["Fournisseur LLM · abstraction LLMProvider"]
 ```
 
 * **Front** : Next.js App Router, TypeScript, Tailwind v4, TanStack Query, React Hook Form + Zod. Thème sombre/clair, palette de commandes (⌘K), accessibilité clavier.
@@ -121,3 +124,4 @@ railway run --service trail-api python -m app.admin add-member vous@exemple.com 
 Calibration sur données expertes · fournisseur LLM réel · file de jobs dédiée et Redis · e-mails de relecture · SSO/SCIM · assignation de programmes · audit axe en CI · génération d'exercices relue par un formateur.
 
 Voir aussi [docs/product/roadmap.md](docs/product/roadmap.md).
+

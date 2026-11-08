@@ -1,8 +1,11 @@
 # Architecture overview
 
-```
-Browser ──(same-origin /api/v1/*)──► Vercel (Next.js) ──rewrite──► Railway trail-api (FastAPI) ──► Railway PostgreSQL (private network)
-                                                                         └─► LLM provider (via LLMProvider abstraction)
+```mermaid
+flowchart LR
+    browser["Browser"] -->|"Same-origin /api/v1/*"| web["Vercel · Next.js"]
+    web -->|"Rewrite"| api["Railway · trail-api / FastAPI"]
+    api -->|"Private network"| pg[("Railway · PostgreSQL")]
+    api --> provider["LLM provider · LLMProvider abstraction"]
 ```
 
 ## Decisions
@@ -17,3 +20,4 @@ Browser ──(same-origin /api/v1/*)──► Vercel (Next.js) ──rewrite─
 
 ## Dependency boundaries
 `api → services/ai/security → models/core`. `ai` never imports `api`. Frontend only knows the REST contract (`apps/web/src/lib/api.ts`).
+
