@@ -2,6 +2,16 @@ import type { Dict } from "../translate";
 
 const dict: Dict = {
   fr: {
+    "Baseline assessment, skills constellation, 3 practice exercises per month.": "Évaluation de départ, constellation de compétences, 3 exercices de pratique par mois.",
+    "Free during the pilot": "Gratuit pendant le pilote",
+    "Unlimited practice, adaptive paths and a Skills Passport. Human verification is billed per review once the pilot ends.": "Pratique illimitée, parcours adaptatifs et passeport de compétences. La vérification humaine sera facturée à la relecture à la fin du pilote.",
+    "Teams": "Équipes",
+    "Per seat · pilot partners": "Par siège · partenaires pilotes",
+    "Trainer Studio, programs, privacy-preserving team analytics. Founding customers help calibrate the scoring.": "Trainer Studio, programmes, analyses d'équipe respectueuses de la vie privée. Les clients fondateurs aident à calibrer la notation.",
+    "Become a pilot partner": "Devenir partenaire pilote",
+    "Enterprise": "Entreprise",
+    "Custom quote": "Sur devis",
+    "SSO and SCIM, EU data residency, custom exercises and rubrics, dedicated reviewers.": "SSO et SCIM, résidence des données dans l'UE, exercices et grilles sur mesure, relecteurs dédiés.",
     "Completion ≠ capability": "Achèvement ≠ capacité",
     "A finished course says nothing about whether someone can scope an agent safely.": "Un cours terminé ne dit rien de la capacité à cadrer un agent en toute sécurité.",
     "Generic content": "Contenu générique",

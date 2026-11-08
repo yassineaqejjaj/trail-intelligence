@@ -55,7 +55,11 @@ export default async function Landing() {
         </Section>
 
         <Section id="pricing" label={t("Pricing")} title={t("Start free. Prove more as you grow.")}>
-          <div className="grid gap-4 md:grid-cols-3">{([[t("Explorer"), t("Free"), t("Baseline assessment, skills constellation, practice lab."), cta, true], [t("Professional"), t("Pricing to be announced"), t("Adaptive paths, human-reviewed verification."), t("Join the pilot"), false], [t("Teams & Enterprise"), t("Contact us"), t("Skills intelligence, programs, trainer studio."), t("Talk to us"), false]] as [string, string, string, string, boolean][]).map(([n, p, d, c, hi]) => <div key={n} className={`flex flex-col gap-3 rounded-[14px] border bg-surface p-6 ${hi ? "border-blue/50" : "border-line"}`}><h3 className="h text-lg font-semibold">{n}</h3><div className="h text-2xl font-semibold">{p}</div><p className="flex-1 text-sm text-fg2">{d}</p><LinkButton href="/register" variant={hi ? "primary" : "outline"}>{c}</LinkButton></div>)}</div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">{([
+            [t("Explorer"), t("Free"), t("Baseline assessment, skills constellation, 3 practice exercises per month."), t("Assess your AI skills"), true],
+            [t("Professional"), t("Free during the pilot"), t("Unlimited practice, adaptive paths and a Skills Passport. Human verification is billed per review once the pilot ends."), t("Join the pilot"), false],
+            [t("Teams"), t("Per seat · pilot partners"), t("Trainer Studio, programs, privacy-preserving team analytics. Founding customers help calibrate the scoring."), t("Become a pilot partner"), false],
+            [t("Enterprise"), t("Custom quote"), t("SSO and SCIM, EU data residency, custom exercises and rubrics, dedicated reviewers."), t("Talk to us"), false]] as [string, string, string, string, boolean][]).map(([n, p, d, c, hi]) => <div key={n} className={`flex flex-col gap-3 rounded-[14px] border bg-surface p-6 ${hi ? "border-blue/50" : "border-line"}`}><h3 className="h text-lg font-semibold">{n}</h3><div className="h text-xl font-semibold">{p}</div><p className="flex-1 text-sm text-fg2">{d}</p><LinkButton href="/register" variant={hi ? "primary" : "outline"}>{c}</LinkButton></div>)}</div>
           <p className="mt-3 text-xs text-muted">{t("Indicative only. No payments are processed in this pilot.")}</p>
         </Section>
 
